@@ -1,165 +1,81 @@
-# Telco Customer Churn — Findings
+# Telco Churn — Business Findings
 
-## 1. Business Problem
-
-Customer churn is an important business problem because losing existing
-customers can reduce recurring revenue and increase the need for customer
-acquisition.
-
-This project develops a machine learning classification model to identify
-customers who are more likely to churn and support targeted retention
-decisions.
+**One-page summary · model: Logistic Regression · held-out test ROC-AUC 0.84**
 
 ---
 
-## 2. Dataset
+## The question
 
-The project uses the Telco Customer Churn dataset.
+*Who will cancel, why, and what should the business do about it?* A telecom carrier
+loses recurring revenue on every cancellation, and reacquiring a customer costs far
+more than retaining one. We built a model that flags likely churners early enough
+for the retention team to act.
 
-The dataset contains **7,043 customer records**.
+## What the data said
 
-The target variable is:
+- **7,043 customers; 26.5% churned** — an imbalanced target. A do-nothing model that
+  predicts *"nobody churns"* scores 73.5% accuracy while catching **zero** leavers,
+  so accuracy is a misleading headline here.
+- One data-quality bug: `TotalCharges` was stored as text with 11 blank values, all
+  for brand-new customers (`tenure = 0`). These are legitimately **$0**, not missing,
+  and were set to zero rather than dropped.
 
-- `Churn` — whether the customer left the company
+## The model
 
-The `customerID` column was removed because it is an identifier rather than
-a predictive feature.
+Three classifiers were compared with 5-fold cross-validation; **Logistic Regression
+won on the metrics that matter** and is also the most interpretable — the ideal
+outcome.
 
----
+| Model | ROC-AUC | Recall (churn) | Accuracy |
+|---|---|---|---|
+| **Logistic Regression** ✅ | **0.846** | **0.797** | 0.749 |
+| Gradient Boosting | 0.829 | 0.700 | 0.771 |
+| Random Forest | 0.824 | 0.465 | **0.788** |
 
-## 3. Data Preparation
+> **The key lesson in one row:** Random Forest has the *highest accuracy* yet the
+> *worst recall* — it looks best but misses **more than half** the churners. We
+> selected on ROC-AUC and recall, not accuracy.
 
-The data preparation process included:
+**On the held-out test set**, Logistic Regression achieved **ROC-AUC 0.842** and
+**recovered 296 of 374 real churners (79%)**, at the cost of 298 false alarms — a
+deliberate trade: a missed churner is lost revenue, a false alarm is one cheap,
+unnecessary retention call.
 
-- Data cleaning
-- Data type correction
-- Handling missing values
-- Feature engineering
-- Binary encoding
-- Ordinal encoding
-- One-hot encoding
-- Train-test splitting
+## Why customers leave (the drivers)
 
-The final dataset contains **38 predictor variables**.
+Consistent across model coefficients, SHAP values, and the exploratory analysis:
 
-The data was divided using an **80/20 stratified train-test split**:
+1. **Month-to-month contracts** — by far the strongest churn signal; two-year
+   contracts are the strongest protector.
+2. **Short tenure** — the first year is the danger zone; risk falls steadily as
+   customers stay.
+3. **Fiber-optic internet at a high price point** — the highest-risk paid service,
+   a value-for-money / expectations signal.
+4. **Electronic-check payment and lacking tech-support / online-security** — friction
+   and low engagement correlate with leaving.
 
-- Training set: **5,634 customers**
-- Test set: **1,409 customers**
+## What the business should do
 
-A fixed `random_state=42` was used to make the split reproducible.
+| Lever | Action | Rationale |
+|---|---|---|
+| **Contracts** | Incentivise month-to-month → 1/2-year (loyalty discount, bundled perk) | Largest single driver; converts the riskiest segment |
+| **Onboarding** | Concierge outreach in the first 3–6 months | Churn concentrates in early tenure |
+| **Fiber value** | Review fiber pricing/support; proactively support new fiber users | Highest-risk paid service |
+| **Engagement** | Bundle online-security/tech-support; nudge autopay off electronic check | Sticky services raise switching cost |
 
----
+**Highest-leverage single play:** move at-risk **month-to-month** customers onto
+longer contracts. Every stage of the analysis points at that one sentence.
 
-## 4. Model Development
+## How to use the model
 
-Three classification models were trained and compared:
+Score any customer with `src/predict.py` (or the Streamlit app). Output is a churn
+probability, a **risk band** (High ≥ 0.60 / Medium ≥ 0.35 / Low), and a suggested
+action — so the retention team gets a ranked worklist, not a raw number.
 
-1. Logistic Regression
-2. Random Forest
-3. XGBoost
+## Caveats
 
-The models were evaluated using:
-
-- Accuracy
-- Precision
-- Recall
-- F1-score
-- ROC-AUC
-
-ROC-AUC was used as the primary comparison metric.
-
----
-
-## 5. Model Performance
-
-The model comparison results are available in:
-
-`reports/model_comparison.csv`
-
-The final model metrics are available in:
-
-`reports/final_model_metrics.csv`
-
-The selected model was:
-
-**Logistic Regression**
-
-Model selection was based on ROC-AUC performance.
-
----
-
-## 6. Final Evaluation
-
-The selected model was evaluated using:
-
-- Classification report
-- Confusion matrix
-- ROC curve
-- Precision-recall curve
-- Threshold analysis
-- Prediction error analysis
-
-The detailed evaluation is documented in:
-
-`notebooks/04_evaluation.ipynb`
-
----
-
-## 7. Threshold Analysis
-
-The project also examined different classification thresholds.
-
-Changing the threshold changes the balance between:
-
-- Identifying more potential churners
-- Producing more false-positive predictions
-
-This is important from a business perspective because the optimal threshold
-depends on the cost of missing a potential churner versus the cost of
-contacting a customer who would not have churned.
-
-The threshold analysis is available in:
-
-`reports/threshold_analysis.csv`
-
----
-
-## 8. Business Interpretation
-
-The model should be treated as a **customer-risk prioritization tool**, not
-as a guarantee that a customer will churn.
-
-Customers with higher predicted churn probability can be prioritized for
-retention actions such as targeted communication, offers, or customer-service
-interventions.
-
-The appropriate intervention threshold should depend on the company's
-available retention resources and the relative cost of false negatives and
-false positives.
-
----
-
-## 9. Limitations
-
-This project uses historical customer data, so model performance may change
-as customer behavior, pricing, products, and market conditions change.
-
-The model identifies statistical patterns associated with churn; it does not
-establish that a particular factor causes churn.
-
-The model should therefore be monitored and periodically re-evaluated when
-new customer data becomes available.
-
----
-
-## 10. Conclusion
-
-This project demonstrates an end-to-end customer churn machine learning
-workflow:
-
-**Exploration → Preprocessing → Model Training → Evaluation → Business Findings**
-
-The resulting model provides a systematic approach for identifying
-customers with higher churn risk and can support more targeted customer
-retention strategies.
+- Snapshot data — no seasonality or time-to-churn; this predicts *whether*, not *when*.
+- Coefficients show association, not proven causation; treat the levers as
+  well-supported hypotheses to A/B test, not guarantees.
+- The 0.60 / 0.35 thresholds are business choices — tune them to the retention team's
+  capacity and the value of a saved customer.
