@@ -245,4 +245,83 @@ def clean_and_engineer(
 
     return X
 
+def build_preprocessor() -> ColumnTransformer:
+    """
+    Build the learned preprocessing transformer.
+
+    Numerical:
+        StandardScaler
+
+    Categorical:
+        OneHotEncoder
+
+    Unknown categories:
+        ignored during inference
+    """
+
+    numeric_pipeline = Pipeline(
+        steps=[
+            ("scaler", StandardScaler()),
+        ]
+    )
+
+    categorical_pipeline = Pipeline(
+        steps=[
+            (
+                "onehot",
+                OneHotEncoder(
+                    handle_unknown="ignore",
+                    sparse_output=False,
+                ),
+            ),
+        ]
+    )
+
+    return ColumnTransformer(
+        transformers=[
+            (
+                "numeric",
+                numeric_pipeline,
+                NUMERIC_FEATURES,
+            ),
+            (
+                "categorical",
+                categorical_pipeline,
+                CATEGORICAL_FEATURES,
+            ),
+        ],
+        remainder="drop",
+        verbose_feature_names_out=True,
+    )
+    
+# ============================================================
+# COMPLETE FEATURE PIPELINE
+# ============================================================
+
+def build_feature_pipeline() -> Pipeline:
+    """
+    Build the complete feature-processing pipeline.
+
+    raw input
+        ↓
+    clean_and_engineer
+        ↓
+    scale + one-hot encode
+    """
+
+    return Pipeline(
+        steps=[
+            (
+                "clean",
+                FunctionTransformer(
+                    clean_and_engineer,
+                    validate=False,
+                ),
+            ),
+            (
+                "preprocessor",
+                build_preprocessor(),
+            ),
+        ]
+    )
 
