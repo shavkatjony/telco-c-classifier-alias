@@ -403,4 +403,118 @@ def main(
         f"Churn rate:    {y.mean():.1%}"
     )
 
+    # --------------------------------------------------------
+    # Compare models using training data only
+    # --------------------------------------------------------
+
+    print(
+        f"\nRunning {CV_FOLDS}-fold cross-validation..."
+    )
+
+    comparison = compare_models(
+        X_train,
+        y_train,
+    )
+
+    print(
+        "\n=== Model Comparison ==="
+    )
+
+    print(
+        comparison.to_string(
+            index=False
+        )
+    )
+
+    # --------------------------------------------------------
+    # Select best model
+    # --------------------------------------------------------
+
+    best_model_name = comparison.loc[
+        0,
+        "Model",
+    ]
+
+    print(
+        f"\nSelected model: {best_model_name}"
+    )
+
+    # --------------------------------------------------------
+    # Fit selected model
+    # --------------------------------------------------------
+
+    final_pipeline = fit_final_model(
+        X_train,
+        y_train,
+        best_model_name,
+    )
+
+    # --------------------------------------------------------
+    # Final test evaluation
+    # --------------------------------------------------------
+
+    final_metrics = evaluate_model(
+        final_pipeline,
+        X_test,
+        y_test,
+    )
+
+    print(
+        "\n=== Final Test Performance ==="
+    )
+
+    for metric, value in final_metrics.items():
+        print(
+            f"{metric}: {value:.4f}"
+        )
+
+    # --------------------------------------------------------
+    # Save everything
+    # --------------------------------------------------------
+
+    save_outputs(
+        final_pipeline,
+        comparison,
+        final_metrics,
+        model_path,
+    )
+
+    print(
+        f"\nSaved pipeline:"
+        f"\n{model_path}"
+    )
+
+
+# ============================================================
+# CLI
+# ============================================================
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Train the Telco customer churn model."
+        )
+    )
+
+    parser.add_argument(
+        "--data",
+        type=Path,
+        default=DEFAULT_DATA_PATH,
+        help="Path to raw dataset.",
+    )
+
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_MODEL_PATH,
+        help="Path for saved model.",
+    )
+
+    args = parser.parse_args()
+
+    main(
+        data_path=args.data,
+        model_path=args.out,
+    )
     
