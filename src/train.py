@@ -264,4 +264,143 @@ def fit_final_model(
     )
 
     return pipeline
+
+
+    # FINAL TEST EVALUATION
+# ============================================================
+
+def evaluate_model(
+    pipeline: Pipeline,
+    X_test: pd.DataFrame,
+    y_test: pd.Series,
+) -> dict:
+    """
+    Evaluate the final pipeline on the untouched test set.
+    """
+
+    y_probability = pipeline.predict_proba(
+        X_test
+    )[:, 1]
+
+    y_prediction = (
+        y_probability >= 0.50
+    ).astype(int)
+
+    return {
+        "Accuracy": accuracy_score(
+            y_test,
+            y_prediction,
+        ),
+
+        "Precision": precision_score(
+            y_test,
+            y_prediction,
+            zero_division=0,
+        ),
+
+        "Recall": recall_score(
+            y_test,
+            y_prediction,
+            zero_division=0,
+        ),
+
+        "F1": f1_score(
+            y_test,
+            y_prediction,
+            zero_division=0,
+        ),
+
+        "ROC-AUC": roc_auc_score(
+            y_test,
+            y_probability,
+        ),
+    }
+
+
+# ============================================================
+# SAVE ARTIFACTS
+# ============================================================
+
+def save_outputs(
+    pipeline: Pipeline,
+    comparison: pd.DataFrame,
+    final_metrics: dict,
+    model_path: Path,
+) -> None:
+    """
+    Save the final model and modeling reports.
+    """
+
+    model_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    DEFAULT_REPORT_PATH.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    # Save complete pipeline
+    joblib.dump(
+        pipeline,
+        model_path,
+    )
+
+    # Save model comparison
+    comparison.to_csv(
+        DEFAULT_REPORT_PATH,
+        index=False,
+    )
+
+    # Save final selected-model metrics
+    pd.DataFrame(
+        [final_metrics]
+    ).to_csv(
+        PROJECT_ROOT
+        / "reports"
+        / "final_model_metrics.csv",
+        index=False,
+    )
+
+
+# ============================================================
+# MAIN
+# ============================================================
+
+def main(
+    data_path: Path = DEFAULT_DATA_PATH,
+    model_path: Path = DEFAULT_MODEL_PATH,
+) -> None:
+
+    print("Loading raw data...")
+
+    X, y = load_data(
+        data_path
+    )
+
+    # --------------------------------------------------------
+    # Split BEFORE learned preprocessing
+    # --------------------------------------------------------
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=TEST_SIZE,
+        stratify=y,
+        random_state=RANDOM_STATE,
+    )
+
+    print(
+        f"Training rows: {len(X_train)}"
+    )
+
+    print(
+        f"Test rows:     {len(X_test)}"
+    )
+
+    print(
+        f"Churn rate:    {y.mean():.1%}"
+    )
+
     
