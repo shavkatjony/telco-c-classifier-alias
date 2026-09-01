@@ -122,3 +122,146 @@ def build_models() -> dict[str, object]:
             random_state=RANDOM_STATE,
         ),
     }
+
+# ============================================================
+# FULL MODEL PIPELINE
+# ============================================================
+
+def build_pipeline(model) -> Pipeline:
+    """
+    Combine cleaning, preprocessing, and model into one object.
+    """
+
+    return Pipeline(
+        steps=[
+            (
+                "clean",
+                FunctionTransformer(
+                    clean_and_engineer,
+                    validate=False,
+                ),
+            ),
+            (
+                "preprocessor",
+                build_preprocessor(),
+            ),
+            (
+                "model",
+                model,
+            ),
+        ]
+    )
+
+# ============================================================
+# CROSS-VALIDATION
+# ============================================================
+
+def compare_models(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+) -> pd.DataFrame:
+    """
+    Compare all candidate models using stratified 5-fold CV.
+    """
+
+    cv = StratifiedKFold(
+        n_splits=CV_FOLDS,
+        shuffle=True,
+        random_state=RANDOM_STATE,
+    )
+
+    scoring = [
+        "accuracy",
+        "precision",
+        "recall",
+        "f1",
+        "roc_auc",
+    ]
+
+    rows = []
+
+    for name, model in build_models().items():
+
+        pipeline = build_pipeline(model)
+
+        scores = cross_validate(
+            pipeline,
+            X_train,
+            y_train,
+            cv=cv,
+            scoring=scoring,
+            n_jobs=-1,
+        )
+
+        rows.append(
+            {
+                "Model": name,
+                "Accuracy": scores[
+                    "test_accuracy"
+                ].mean(),
+
+                "Precision": scores[
+                    "test_precision"
+                ].mean(),
+
+                "Recall": scores[
+                    "test_recall"
+                ].mean(),
+
+                "F1": scores[
+                    "test_f1"
+                ].mean(),
+
+                "ROC-AUC": scores[
+                    "test_roc_auc"
+                ].mean(),
+
+                "ROC-AUC Std": scores[
+                    "test_roc_auc"
+                ].std(),
+            }
+        )
+
+    results = pd.DataFrame(rows)
+
+    return (
+        results
+        .sort_values(
+            by=PRIMARY_METRIC,
+            ascending=False,
+        )
+        .reset_index(drop=True)
+        .round(4)
+    )
+
+    # ============================================================
+# FINAL TRAINING
+# ============================================================
+
+def fit_final_model(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    model_name: str,
+) -> Pipeline:
+    """
+    Fit the selected pipeline on the complete training set.
+    """
+
+    models = build_models()
+
+    if model_name not in models:
+        raise ValueError(
+            f"Unknown model: {model_name}"
+        )
+
+    pipeline = build_pipeline(
+        models[model_name]
+    )
+
+    pipeline.fit(
+        X_train,
+        y_train,
+    )
+
+    return pipeline
+    
