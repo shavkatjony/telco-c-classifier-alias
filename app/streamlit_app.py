@@ -339,10 +339,10 @@ if predict_button:
 
     st.header("Prediction Result")
 
-    probability = result["probability"]
-    risk_band = result["risk_band"]
-    churn = result["churn"]
-    action = result["suggested_action"]
+probability = result["churn_probability"]
+risk_band = result["risk_band"]
+churn = result["churn_prediction"]
+action = result["suggested_action"]
 
 
     # --------------------------------------------------------
