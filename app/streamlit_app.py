@@ -246,3 +246,194 @@ with col3:
         ],
     )
 
+
+# BILLING INFORMATION
+# ============================================================
+
+st.header("Billing Information")
+
+billing_col1, billing_col2 = st.columns(2)
+
+with billing_col1:
+
+    monthly_charges = st.number_input(
+        "Monthly Charges ($)",
+        min_value=18.0,
+        max_value=120.0,
+        value=70.0,
+        step=1.0,
+    )
+
+with billing_col2:
+
+    total_charges = st.number_input(
+        "Total Charges ($)",
+        min_value=0.0,
+        max_value=9000.0,
+        value=840.0,
+        step=10.0,
+    )
+
+
+# ============================================================
+# PREDICTION
+# ============================================================
+
+st.divider()
+
+predict_button = st.button(
+    "Predict Churn Risk",
+    type="primary",
+    use_container_width=True,
+)
+
+
+if predict_button:
+
+    # --------------------------------------------------------
+    # Build raw customer record
+    # --------------------------------------------------------
+
+    customer = {
+        "gender": gender,
+        "SeniorCitizen": senior_citizen,
+        "Partner": partner,
+        "Dependents": dependents,
+        "tenure": tenure,
+        "PhoneService": phone_service,
+        "MultipleLines": multiple_lines,
+        "InternetService": internet_service,
+        "OnlineSecurity": online_security,
+        "OnlineBackup": online_backup,
+        "DeviceProtection": device_protection,
+        "TechSupport": tech_support,
+        "StreamingTV": streaming_tv,
+        "StreamingMovies": streaming_movies,
+        "Contract": contract,
+        "PaperlessBilling": paperless_billing,
+        "PaymentMethod": payment_method,
+        "MonthlyCharges": monthly_charges,
+        "TotalCharges": total_charges,
+    }
+
+    # --------------------------------------------------------
+    # Run model
+    # --------------------------------------------------------
+
+    try:
+
+        result = predict_customer(
+            model,
+            customer,
+        )
+
+    except ValueError as error:
+
+        st.error(str(error))
+        st.stop()
+
+
+    # ========================================================
+    # RESULTS
+    # ========================================================
+
+    st.header("Prediction Result")
+
+    probability = result["probability"]
+    risk_band = result["risk_band"]
+    churn = result["churn"]
+    action = result["suggested_action"]
+
+
+    # --------------------------------------------------------
+    # Main result columns
+    # --------------------------------------------------------
+
+    result_col1, result_col2, result_col3 = st.columns(3)
+
+    with result_col1:
+
+        st.metric(
+            "Churn Probability",
+            f"{probability:.1%}",
+        )
+
+    with result_col2:
+
+        st.metric(
+            "Risk Level",
+            risk_band,
+        )
+
+    with result_col3:
+
+        prediction_text = (
+            "Likely to Churn"
+            if churn
+            else "Likely to Stay"
+        )
+
+        st.metric(
+            "Prediction",
+            prediction_text,
+        )
+
+
+    # --------------------------------------------------------
+    # Risk explanation
+    # --------------------------------------------------------
+
+    if risk_band == "High":
+
+        st.error(
+            f"High churn risk — {action}"
+        )
+
+    elif risk_band == "Medium":
+
+        st.warning(
+            f"Medium churn risk — {action}"
+        )
+
+    else:
+
+        st.success(
+            f"Low churn risk — {action}"
+        )
+
+
+    # --------------------------------------------------------
+    # Probability visualization
+    # --------------------------------------------------------
+
+    st.subheader("Churn Probability")
+
+    st.progress(
+        int(probability * 100)
+    )
+
+    st.caption(
+        f"Model probability: {probability:.1%}"
+    )
+
+
+    # --------------------------------------------------------
+    # Business recommendation
+    # --------------------------------------------------------
+
+    st.subheader("Recommended Business Action")
+
+    st.write(action)
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.divider()
+
+st.caption(
+    "Telco Customer Churn ML Project | "
+    "Prediction powered by the trained sklearn pipeline"
+)
+
