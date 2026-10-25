@@ -1,6 +1,7 @@
+# Runtime for the Streamlit app. Streamlit Community Cloud installs this file.
+# scikit-learn must match the version that saved models/churn_pipeline.pkl.
 streamlit==1.63.0
 pandas==2.3.3
 numpy==2.5.3
 scikit-learn==1.7.2
-xgboost==3.2.0
 joblib==1.5.3
