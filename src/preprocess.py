@@ -1,10 +1,9 @@
 """
-predict.py — load the saved pipeline and score individual customers.
+preprocess.py — load the raw data and build the feature pipeline.
 
-This is the inference side of the project and the engine behind the Streamlit
-app. Because the persisted artifact is the *entire* pipeline (cleaning +
-encoding + model), scoring a raw customer record is a one-liner: hand the
-pipeline a DataFrame with the original column names and it does the rest.
+Holds the deterministic cleaning / feature-engineering step, the learned
+scale + one-hot step, and RAW_INPUT_SCHEMA, the single source of truth for
+valid raw input used by src/predict.py, the Streamlit app and the API.
 """
 
 from __future__ import annotations

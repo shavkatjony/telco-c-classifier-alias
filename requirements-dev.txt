@@ -1,0 +1,15 @@
+# Local development: API service, tests and notebooks.
+# Not read by Streamlit Community Cloud.
+-r requirements.txt
+
+# API service
+fastapi==0.161.1
+uvicorn==0.53.0
+
+# Tests (FastAPI's TestClient needs httpx2)
+pytest==9.0.3
+httpx2==2.15.1
+
+# Notebooks (03_modeling compares against XGBoost, 04_evaluation plots)
+xgboost==3.2.0
+matplotlib==3.10.8
